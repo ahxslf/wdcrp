@@ -31,6 +31,7 @@ from discord.ext import commands, tasks
 
 import config
 import detectors
+import health
 import helpers
 import profanity
 from db import Database
@@ -68,6 +69,13 @@ class DCRPBot(commands.Bot):
     # Lifecycle
     # ------------------------------------------------------------------
     async def setup_hook(self) -> None:
+        # Open the health port for hosts that require one (Render & friends).
+        # No-op when PORT is not set. Never fatal to the bot.
+        try:
+            await health.start_health_server(self, config.BOT_NAME)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[DCRP] Health server failed to start (non-fatal): {exc}")
+
         if config.GUILD_ID:
             # Instant command availability in this specific guild
             guild_obj = discord.Object(id=config.GUILD_ID)
