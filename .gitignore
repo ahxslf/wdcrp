@@ -1,0 +1,4 @@
+.env
+modbot.db
+*.db
+__pycache__/
