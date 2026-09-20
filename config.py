@@ -93,6 +93,15 @@ WARN_COOLDOWN_SECONDS = 8
 # First detected invite -> this timeout. Second (or any later) -> kick.
 INVITE_TIMEOUT_HOURS = 24
 
+# Categories whose channels are FULLY invite-free zones: any invite posted
+# there is completely ignored (not deleted, not punished, not logged).
+INVITE_EXEMPT_CATEGORY_IDS = (
+    1444128905073135807,
+    1444128969891778622,
+    1444128942335328257,
+    1411736929111769272,
+)
+
 # ----------------------------------------------------------------------------
 # SPAM DETECTION THRESHOLDS
 # ----------------------------------------------------------------------------
