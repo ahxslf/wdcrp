@@ -156,6 +156,17 @@ class DCRPBot(commands.Bot):
                 print(f"[DCRP]   {label} channel: "
                       f"{'✅ #' + ch.name if ch else '❌ NOT FOUND (id ' + str(ch_id) + ')'}")
 
+            # invite-exempt categories sanity check
+            if config.INVITE_EXEMPT_CATEGORY_IDS:
+                found = [c for c in config.INVITE_EXEMPT_CATEGORY_IDS
+                         if guild.get_channel(c) is not None]
+                missing = [c for c in config.INVITE_EXEMPT_CATEGORY_IDS
+                           if guild.get_channel(c) is None]
+                print(f"[DCRP]   invite-exempt categories: "
+                      f"{len(found)}/{len(config.INVITE_EXEMPT_CATEGORY_IDS)} found")
+                for cid in missing:
+                    print(f"[DCRP]     ⚠️ category {cid} not found in this guild")
+
             founder = guild.get_role(config.FOUNDER_ROLE_ID)
             print(f"[DCRP]   Founder role: "
                   f"{'✅ @' + founder.name if founder else '❌ NOT FOUND'}")
@@ -362,6 +373,11 @@ class DCRPBot(commands.Bot):
         if not codes:
             return False
 
+        # Invite-free categories: absolute silence — no delete, no action,
+        # no log. Post simply stays.
+        if self._invite_channel_exempt(message.channel):
+            return False
+
         violating: list[str] = []
         for code in codes:
             if self.db.is_exempt_invite(guild.id, code):
@@ -423,6 +439,15 @@ class DCRPBot(commands.Bot):
                                  offense_count, action),
         )
         return True
+
+    def _invite_channel_exempt(self, channel) -> bool:
+        """True if the channel (or its parent, for threads) sits under an
+        invite-exempt category."""
+        cat_id = getattr(channel, "category_id", None)
+        parent = getattr(channel, "parent", None)
+        if cat_id is None and parent is not None:
+            cat_id = getattr(parent, "category_id", None)
+        return cat_id in config.INVITE_EXEMPT_CATEGORY_IDS
 
     async def is_own_guild_invite(self, guild: discord.Guild,
                                   code: str) -> bool:
@@ -737,6 +762,9 @@ async def mod_status_cmd(interaction: discord.Interaction) -> None:
     embed.add_field(name="Exempt invites",
                     value=str(len(_bot.db.list_exempt_invites(
                         interaction.guild_id))), inline=True)
+    embed.add_field(name="Invite-free categories",
+                    value=str(len(config.INVITE_EXEMPT_CATEGORY_IDS)),
+                    inline=True)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
